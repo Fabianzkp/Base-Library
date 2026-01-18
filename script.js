@@ -41,6 +41,15 @@ class BaseLibrary {
     }
 
     async fetchBooks(query = '', category = 'all') {
+        const [gutenbergBooks, googleBooks] = await Promise.all([
+            this.fetchGutenbergBooks(query, category),
+            this.fetchGoogleBooks(query, category)
+        ]);
+        
+        return [...gutenbergBooks, ...googleBooks];
+    }
+
+    async fetchGutenbergBooks(query, category) {
         try {
             let apiUrl = `https://gutendex.com/books/?search=${encodeURIComponent(query)}`;
             
@@ -52,9 +61,48 @@ class BaseLibrary {
 
             const response = await fetch(apiUrl);
             const data = await response.json();
-            return data.results || [];
+            return (data.results || []).map(book => ({
+                ...book,
+                source: 'gutenberg',
+                uniqueId: `gutenberg-${book.id}`
+            }));
         } catch (error) {
-            console.error('Error fetching books:', error);
+            console.error('Error fetching Gutenberg books:', error);
+            return [];
+        }
+    }
+
+    async fetchGoogleBooks(query, category) {
+        try {
+            let searchQuery = query;
+            if (category === 'fiction') {
+                searchQuery += '+subject:fiction';
+            } else if (category === 'non-fiction') {
+                searchQuery += '+subject:nonfiction';
+            }
+            
+            const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=5&filter=free-ebooks`;
+            
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            return (data.items || []).map(item => {
+                const book = item.volumeInfo;
+                return {
+                    id: item.id,
+                    title: book.title || 'Unknown Title',
+                    authors: book.authors ? book.authors.map(name => ({name})) : [{name: 'Unknown Author'}],
+                    formats: {
+                        'image/jpeg': book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail,
+                        'text/html': book.previewLink,
+                        'application/pdf': item.accessInfo?.pdf?.downloadLink,
+                        'application/epub+zip': item.accessInfo?.epub?.downloadLink
+                    },
+                    source: 'google',
+                    uniqueId: `google-${item.id}`
+                };
+            });
+        } catch (error) {
+            console.error('Error fetching Google Books:', error);
             return [];
         }
     }
@@ -83,22 +131,27 @@ class BaseLibrary {
     }
 
     createBookCard(book) {
-        const bookId = book.id;
+        const bookId = book.uniqueId || book.id;
         const isFavorited = this.favorites.some(fav => fav.id === bookId);
         const coverUrl = book.formats['image/jpeg'] || 'https://via.placeholder.com/200x300?text=No+Cover';
-        const authors = book.authors.map(author => author.name).join(', ') || 'Unknown Author';
+        const authors = book.authors?.map(author => author.name).join(', ') || 'Unknown Author';
+        const sourceLabel = {
+            'gutenberg': 'Gutenberg',
+            'google': 'Google Books'
+        }[book.source] || book.source;
 
         return `
-            <div class="book-card" data-book-id="${bookId}">
+            <div class="book-card" data-book-id="${bookId}" data-book='${JSON.stringify(book).replace(/'/g, "&apos;")}'>
+                <div class="source-badge">${sourceLabel}</div>
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="this.src='https://via.placeholder.com/200x300?text=No+Cover'">
                 <div class="book-title">${book.title}</div>
                 <div class="book-author">by ${authors}</div>
                 <div class="book-actions">
-                    <button class="read-btn" onclick="library.readBook(${bookId})">Read</button>
-                    <button class="download-btn" onclick="library.downloadBook(${bookId})">Download</button>
+                    <button class="read-btn" onclick="library.readBook('${bookId}')">Read</button>
+                    <button class="download-btn" onclick="library.downloadBook('${bookId}')">Download</button>
                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
-                            onclick="library.toggleFavorite(${bookId})">
+                            onclick="library.toggleFavorite('${bookId}')">
                         ${isFavorited ? '★' : '☆'}
                     </button>
                 </div>
@@ -147,8 +200,8 @@ class BaseLibrary {
 
     async readBook(bookId) {
         try {
-            const response = await fetch(`https://gutendex.com/books/${bookId}`);
-            const book = await response.json();
+            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+            const book = JSON.parse(bookCard.getAttribute('data-book'));
             
             const htmlUrl = book.formats['text/html'] || book.formats['text/plain'];
             if (htmlUrl) {
@@ -163,8 +216,8 @@ class BaseLibrary {
 
     async downloadBook(bookId) {
         try {
-            const response = await fetch(`https://gutendex.com/books/${bookId}`);
-            const book = await response.json();
+            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+            const book = JSON.parse(bookCard.getAttribute('data-book'));
             
             const downloadUrl = book.formats['application/epub+zip'] || 
                               book.formats['application/pdf'] || 
@@ -173,8 +226,12 @@ class BaseLibrary {
             if (downloadUrl) {
                 const link = document.createElement('a');
                 link.href = downloadUrl;
-                link.download = `${book.title}.${downloadUrl.includes('epub') ? 'epub' : downloadUrl.includes('pdf') ? 'pdf' : 'txt'}`;
+                const extension = downloadUrl.includes('epub') ? 'epub' : 
+                                downloadUrl.includes('pdf') ? 'pdf' : 'txt';
+                link.download = `${book.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
             } else {
                 alert('Download not available for this book.');
             }

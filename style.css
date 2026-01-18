@@ -72,6 +72,11 @@ header h1 {
     font-size: 1rem;
 }
 
+.filter-container {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .filter-container select {
     padding: 0.75rem;
     border: none;
@@ -179,6 +184,18 @@ main {
 
 .favorite-btn.favorited {
     background: #c0392b;
+}
+
+.source-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--button-bg);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
 }
 
 .no-results {
