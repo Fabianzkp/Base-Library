@@ -9,6 +9,7 @@ The project addresses the need for a streamlined, centralized platform for digit
 **Anana Agwu Ezikpe** | Base website, search engine, online reading, downloads, favorites, visual theme |
 **Livia Costa Galletti Lira de Medeiros** | Reader improvements (tabs, zoom, responsive design) |
 **Edgar Jose Rodriguez Martinez** | User authentication, comments, and rating system |
+
 ---
 
 ## 🧠 Project Description
@@ -38,6 +39,7 @@ The application follows a **client-server architecture** with the following laye
 - Comments
 - Ratings
 - Favorites
+
 ---
 
 ## 🛠️ Technologies Used
@@ -46,16 +48,18 @@ HTML, CSS, JavaScript
 Node.js / Express (or equivalent depending on the project)
 Database | MongoDB or similar
 Git & GitHub
+
 ---
 
 ## 🛠️ Favorite Quotes
 
 Edgar Rodríguez: 
-    - Elder Dieter F. Uchtdorf said, "Now is the best time to start becoming the person we ultimately want to be."
+- Elder Dieter F. Uchtdorf said, "Now is the best time to start becoming the person we ultimately want to be."
 
 Anana Agwu Ezikpe: 
-    - 
+- 
 
 Livia Costa Galletti Lira de Medeiros: 
-    - 
+-
+
 ---
