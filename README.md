@@ -50,7 +50,7 @@ Git & GitHub
 
 ---
 
-## 🛠️ Favorite Quotes
+## 🌟 Favorite Quotes
 
 Edgar Rodríguez: 
 - Elder Dieter F. Uchtdorf said, "Now is the best time to start becoming the person we ultimately want to be."
