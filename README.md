@@ -6,10 +6,8 @@ The project addresses the need for a streamlined, centralized platform for digit
 | Team Member | Functionalities |
 |------------|-----------------|
 |**Anana Agwu Ezikpe** | Base website, search engine, online reading, downloads, favorites, visual theme |
-
 |**Livia Costa Galletti Lira de Medeiros** | Reader improvements (tabs, zoom, responsive design) |
-
-|**Edgar Jose Rodriguez Martinez** | User authentication, comments, and rating system |
+|**Edgar Jose Rodriguez Martinez** | User authentication, comments, and rating system|
 
 ---
 
