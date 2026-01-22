@@ -1,13 +1,14 @@
 # Base-Library
+
 The project addresses the need for a streamlined, centralized platform for digital reading. Base Library provides a clean, user-friendly interface for discovering and managing books. It solves the problem of difficult navigation and loss of data by allowing users to search, categorize, and "save" their favorite books in one responsive location.
 
 ## 👥 Team and Responsibilities
 
-| Team Member | Functionalities |
-|------------|-----------------|
-|**Anana Agwu Ezikpe** | Base website, search engine, online reading, downloads, favorites, visual theme |
-|**Livia Costa Galletti Lira de Medeiros** | Reader improvements (tabs, zoom, responsive design) |
-|**Edgar Jose Rodriguez Martinez** | User authentication, comments, and rating system|
+| Team Member                               | Functionalities                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------- |
+| **Anana Agwu Ezikpe**                     | Base website, search engine, online reading, downloads, favorites, visual theme |
+| **Livia Costa Galletti Lira de Medeiros** | Reader improvements (tabs, zoom, responsive design)                             |
+| **Edgar Jose Rodriguez Martinez**         | User authentication, comments, and rating system                                |
 
 ---
 
@@ -26,6 +27,7 @@ Base Library provides a complete online reading experience with social interacti
 ---
 
 ## 🧩 Project Architecture
+
 The application follows a **client-server architecture** with the following layers:
 
 - Web user interface (HTML/CSS/JS)
@@ -52,13 +54,16 @@ Git & GitHub
 
 ## 🌟 Favorite Quotes
 
-Edgar Rodríguez: 
+Edgar Rodríguez:
+
 - Elder Dieter F. Uchtdorf said, "Now is the best time to start becoming the person we ultimately want to be."
 
-Anana Agwu Ezikpe: 
-- Quote
+Anana Agwu Ezikpe:
 
-Livia Costa Galletti Lira de Medeiros: 
+- Quote : "Skill to do comes of doing; knowledge comes by eyes always open, and working hands; and there is no knowledge that is not power." - Ralph Waldo Emerson.
+
+Livia Costa Galletti Lira de Medeiros:
+
 - Quote
 
 ---
