@@ -64,6 +64,6 @@ Anana Agwu Ezikpe:
 
 Livia Costa Galletti Lira de Medeiros:
 
-- Quote
+- Quote : "First doubt your doubts before you doubt your faith." - Dieter F. Uchtdorf.
 
 ---
