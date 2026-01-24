@@ -1,37 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Reader</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Reader</title>
+    <link rel="stylesheet" href="./reader.css" />
 
-  <link rel="stylesheet" href="./reader.css" />
+    <!-- JSZip ( obligated for EPUB.js to open .epub binary) -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-  <!-- JSZip (obrigatório para EPUB.js abrir .epub binário) -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <!-- EPUB.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
 
+    <!-- PDF.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js"></script>
+  </head>
+  <body>
+    <header class="reader-header">
+      <button id="prevBtn" class="reader-btn">◀ Prev</button>
+      <button id="nextBtn" class="reader-btn">Next ▶</button>
 
-  <!-- EPUB.js (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+      <div id="title" class="reader-title">Loading…</div>
+      <span id="pageInfo" class="reader-pageinfo"></span>
+    </header>
 
-  <!-- PDF.js (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js"></script>
-</head>
-<body>
-  <header class="reader-header">
-    <button id="prevBtn" class="reader-btn">◀ Prev</button>
-    <button id="nextBtn" class="reader-btn">Next ▶</button>
+    <div id="viewerWrap" class="viewer-wrap">
+      <div id="viewer" class="viewer hidden"></div>
+      <canvas id="pdfCanvas" class="pdf-canvas hidden"></canvas>
+      <iframe id="htmlFrame" class="html-frame hidden"></iframe>
+    </div>
 
-    <div id="title" class="reader-title">Loading…</div>
-    <span id="pageInfo" class="reader-pageinfo"></span>
-  </header>
-
-  <div id="viewerWrap" class="viewer-wrap">
-    <div id="viewer" class="viewer hidden"></div>
-    <canvas id="pdfCanvas" class="pdf-canvas hidden"></canvas>
-    <iframe id="htmlFrame" class="html-frame hidden"></iframe>
-  </div>
-
-  <script src="./reader.js"></script>
-</body>
+    <script src="./reader.js"></script>
+  </body>
 </html>

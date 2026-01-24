@@ -5,7 +5,7 @@ const PORT = 3000;
 
 app.use(express.static("."));
 
-// cache simples em memória (evita baixar o epub várias vezes)
+// simple cache in memory (avoids downloading the epub multiple times)
 const cache = new Map(); // url -> { buf, contentType }
 
 app.get("/proxy", async (req, res) => {
@@ -39,7 +39,7 @@ app.get("/proxy", async (req, res) => {
 
     const range = req.headers.range;
 
-    // ✅ Suporte a Range requests (muito importante para EPUB/PDF readers)
+    // ✅ Support a Range requests (important for EPUB/PDF readers)
     if (range) {
       const match = /bytes=(\d+)-(\d*)/.exec(range);
       if (!match) return res.status(416).end();
@@ -60,7 +60,6 @@ app.get("/proxy", async (req, res) => {
       return res.end(chunk);
     }
 
-    // sem range: manda tudo
     res.setHeader("Content-Length", String(buf.length));
     return res.status(200).end(buf);
   } catch (err) {

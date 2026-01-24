@@ -64,14 +64,14 @@
 
     const arrayBuffer = await resp.arrayBuffer();
 
-    // EPUB = ZIP. Se não começar com "PK", não é epub válido
+    // EPUB = ZIP. if doesn't start with "PK", it's not a valid epub
     const sig = new Uint8Array(arrayBuffer.slice(0, 4));
     const isZip = sig[0] === 0x50 && sig[1] === 0x4B; // 'P' 'K'
 
     if (!isZip) {
       console.warn("Not a ZIP/EPUB. Probably HTML/blocked.");
       if (preview) {
-        setStatus("Google Books não liberou o EPUB. Abrindo preview…");
+        setStatus("Google Books does not provide EPUB. Opening preview…");
         window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
         return;
       }
@@ -107,12 +107,12 @@
     console.warn("EPUB error:", err);
 
     if (preview) {
-      setStatus("Não foi possível abrir EPUB. Abrindo preview…");
+      setStatus("Unable to open EPUB. Opening preview…");
       window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
       return;
     }
 
-    setStatus("Erro ao carregar EPUB. Veja o console.");
+    setStatus("Error loading EPUB.");
   }
 }
 

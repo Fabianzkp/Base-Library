@@ -1,146 +1,157 @@
 class BaseLibrary {
-    constructor() {
-        this.favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-        this.currentTheme = localStorage.getItem('theme') || 'light';
-        this.searchTimeout = null;
-        this.currentView = 'main';
-        
-        this.initializeElements();
-        this.setupEventListeners();
-        this.applyTheme();
-        this.performInitialSearch();
+  constructor() {
+    this.favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    this.currentTheme = localStorage.getItem("theme") || "light";
+    this.searchTimeout = null;
+    this.currentView = "main";
+
+    this.initializeElements();
+    this.setupEventListeners();
+    this.applyTheme();
+    this.performInitialSearch();
+  }
+
+  initializeElements() {
+    this.searchInput = document.getElementById("searchInput");
+    this.categoryFilter = document.getElementById("categoryFilter");
+    this.bookGrid = document.getElementById("bookGrid");
+    this.favoritesGrid = document.getElementById("favoritesGrid");
+    this.favoritesBtn = document.getElementById("favoritesBtn");
+    this.backToMainBtn = document.getElementById("backToMain");
+    this.themeSelector = document.getElementById("themeSelector");
+    this.mainView = document.getElementById("mainView");
+    this.favoritesView = document.getElementById("favoritesView");
+
+    this.themeSelector.value = this.currentTheme;
+  }
+
+  setupEventListeners() {
+    // Real-time search
+    this.searchInput.addEventListener("input", () => {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.searchBooks();
+      }, 300);
+    });
+
+    this.categoryFilter.addEventListener("change", () => this.searchBooks());
+    this.favoritesBtn.addEventListener("click", () => this.showFavorites());
+    this.backToMainBtn.addEventListener("click", () => this.showMain());
+    this.themeSelector.addEventListener("change", (e) =>
+      this.changeTheme(e.target.value),
+    );
+  }
+
+  async fetchBooks(query = "", category = "all") {
+    const [gutenbergBooks, googleBooks] = await Promise.all([
+      this.fetchGutenbergBooks(query, category),
+      this.fetchGoogleBooks(query, category),
+    ]);
+
+    return [...gutenbergBooks, ...googleBooks];
+  }
+
+  async fetchGutenbergBooks(query, category) {
+    try {
+      let apiUrl = `https://gutendex.com/books/?search=${encodeURIComponent(query)}`;
+
+      if (category === "fiction") {
+        apiUrl += "&topic=fiction";
+      } else if (category === "non-fiction") {
+        apiUrl += "&topic=nonfiction";
+      }
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      return (data.results || []).map((book) => ({
+        ...book,
+        source: "gutenberg",
+        uniqueId: `gutenberg-${book.id}`,
+      }));
+    } catch (error) {
+      console.error("Error fetching Gutenberg books:", error);
+      return [];
+    }
+  }
+
+  async fetchGoogleBooks(query, category) {
+    try {
+      let searchQuery = query;
+      if (category === "fiction") {
+        searchQuery += "+subject:fiction";
+      } else if (category === "non-fiction") {
+        searchQuery += "+subject:nonfiction";
+      }
+
+      const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=5&filter=free-ebooks`;
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      return (data.items || []).map((item) => {
+        const book = item.volumeInfo;
+        return {
+          id: item.id,
+          title: book.title || "Unknown Title",
+          authors: book.authors
+            ? book.authors.map((name) => ({ name }))
+            : [{ name: "Unknown Author" }],
+          formats: {
+            "image/jpeg":
+              book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail,
+            "text/html": book.previewLink,
+            "application/pdf": item.accessInfo?.pdf?.downloadLink,
+            "application/epub+zip": item.accessInfo?.epub?.downloadLink,
+          },
+          source: "google",
+          uniqueId: `google-${item.id}`,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching Google Books:", error);
+      return [];
+    }
+  }
+
+  async searchBooks() {
+    const query = this.searchInput.value.trim() || "popular";
+    const category = this.categoryFilter.value;
+
+    const books = await this.fetchBooks(query, category);
+    this.displayBooks(books, this.bookGrid);
+  }
+
+  async performInitialSearch() {
+    const books = await this.fetchBooks();
+    this.displayBooks(books, this.bookGrid);
+  }
+
+  displayBooks(books, container) {
+    if (books.length === 0) {
+      container.innerHTML = '<div class="no-results">No books found</div>';
+      return;
     }
 
-    initializeElements() {
-        this.searchInput = document.getElementById('searchInput');
-        this.categoryFilter = document.getElementById('categoryFilter');
-        this.bookGrid = document.getElementById('bookGrid');
-        this.favoritesGrid = document.getElementById('favoritesGrid');
-        this.favoritesBtn = document.getElementById('favoritesBtn');
-        this.backToMainBtn = document.getElementById('backToMain');
-        this.themeSelector = document.getElementById('themeSelector');
-        this.mainView = document.getElementById('mainView');
-        this.favoritesView = document.getElementById('favoritesView');
-        
-        this.themeSelector.value = this.currentTheme;
-    }
+    container.innerHTML = books
+      .map((book) => this.createBookCard(book))
+      .join("");
+    this.attachBookEventListeners(container);
+  }
 
-    setupEventListeners() {
-        // Real-time search
-        this.searchInput.addEventListener('input', () => {
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(() => {
-                this.searchBooks();
-            }, 300);
-        });
+  createBookCard(book) {
+    const bookId = book.uniqueId || book.id;
+    const isFavorited = this.favorites.some((fav) => fav.id === bookId);
+    const coverUrl =
+      book.formats["image/jpeg"] ||
+      "https://via.placeholder.com/200x300?text=No+Cover";
+    const authors =
+      book.authors?.map((author) => author.name).join(", ") || "Unknown Author";
+    const sourceLabel =
+      {
+        gutenberg: "Gutenberg",
+        google: "Google Books",
+      }[book.source] || book.source;
 
-        this.categoryFilter.addEventListener('change', () => this.searchBooks());
-        this.favoritesBtn.addEventListener('click', () => this.showFavorites());
-        this.backToMainBtn.addEventListener('click', () => this.showMain());
-        this.themeSelector.addEventListener('change', (e) => this.changeTheme(e.target.value));
-    }
-
-    async fetchBooks(query = '', category = 'all') {
-        const [gutenbergBooks, googleBooks] = await Promise.all([
-            this.fetchGutenbergBooks(query, category),
-            this.fetchGoogleBooks(query, category)
-        ]);
-        
-        return [...gutenbergBooks, ...googleBooks];
-    }
-
-    async fetchGutenbergBooks(query, category) {
-        try {
-            let apiUrl = `https://gutendex.com/books/?search=${encodeURIComponent(query)}`;
-            
-            if (category === 'fiction') {
-                apiUrl += '&topic=fiction';
-            } else if (category === 'non-fiction') {
-                apiUrl += '&topic=nonfiction';
-            }
-
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            return (data.results || []).map(book => ({
-                ...book,
-                source: 'gutenberg',
-                uniqueId: `gutenberg-${book.id}`
-            }));
-        } catch (error) {
-            console.error('Error fetching Gutenberg books:', error);
-            return [];
-        }
-    }
-
-    async fetchGoogleBooks(query, category) {
-        try {
-            let searchQuery = query;
-            if (category === 'fiction') {
-                searchQuery += '+subject:fiction';
-            } else if (category === 'non-fiction') {
-                searchQuery += '+subject:nonfiction';
-            }
-            
-            const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=5&filter=free-ebooks`;
-            
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            return (data.items || []).map(item => {
-                const book = item.volumeInfo;
-                return {
-                    id: item.id,
-                    title: book.title || 'Unknown Title',
-                    authors: book.authors ? book.authors.map(name => ({name})) : [{name: 'Unknown Author'}],
-                    formats: {
-                        'image/jpeg': book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail,
-                        'text/html': book.previewLink,
-                        'application/pdf': item.accessInfo?.pdf?.downloadLink,
-                        'application/epub+zip': item.accessInfo?.epub?.downloadLink
-                    },
-                    source: 'google',
-                    uniqueId: `google-${item.id}`
-                };
-            });
-        } catch (error) {
-            console.error('Error fetching Google Books:', error);
-            return [];
-        }
-    }
-
-    async searchBooks() {
-        const query = this.searchInput.value.trim() || 'popular';
-        const category = this.categoryFilter.value;
-        
-        const books = await this.fetchBooks(query, category);
-        this.displayBooks(books, this.bookGrid);
-    }
-
-    async performInitialSearch() {
-        const books = await this.fetchBooks();
-        this.displayBooks(books, this.bookGrid);
-    }
-
-    displayBooks(books, container) {
-        if (books.length === 0) {
-            container.innerHTML = '<div class="no-results">No books found</div>';
-            return;
-        }
-
-        container.innerHTML = books.map(book => this.createBookCard(book)).join('');
-        this.attachBookEventListeners(container);
-    }
-
-    createBookCard(book) {
-        const bookId = book.uniqueId || book.id;
-        const isFavorited = this.favorites.some(fav => fav.id === bookId);
-        const coverUrl = book.formats['image/jpeg'] || 'https://via.placeholder.com/200x300?text=No+Cover';
-        const authors = book.authors?.map(author => author.name).join(', ') || 'Unknown Author';
-        const sourceLabel = {
-            'gutenberg': 'Gutenberg',
-            'google': 'Google Books'
-        }[book.source] || book.source;
-
-        return `
+    return `
             <div class="book-card" data-book-id="${bookId}" data-book='${JSON.stringify(book).replace(/'/g, "&apos;")}'>
                 <div class="source-badge">${sourceLabel}</div>
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
@@ -150,176 +161,197 @@ class BaseLibrary {
                 <div class="book-actions">
                     <button class="read-btn" onclick="library.readBook('${bookId}')">Read</button>
                     <button class="download-btn" onclick="library.downloadBook('${bookId}')">Download</button>
-                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
+                    <button class="favorite-btn ${isFavorited ? "favorited" : ""}" 
                             onclick="library.toggleFavorite('${bookId}')">
-                        ${isFavorited ? '★' : '☆'}
+                        ${isFavorited ? "★" : "☆"}
                     </button>
                 </div>
             </div>
         `;
-    }
-
-    attachBookEventListeners(container) {
-        // Event listeners are handled via onclick attributes in createBookCard
-    }
-
-    toggleFavorite(bookId) {
-        const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
-        const bookData = this.extractBookData(bookCard, bookId);
-        
-        const existingIndex = this.favorites.findIndex(fav => fav.id === bookId);
-        
-        if (existingIndex > -1) {
-            this.favorites.splice(existingIndex, 1);
-        } else {
-            this.favorites.push(bookData);
-        }
-        
-        localStorage.setItem('favorites', JSON.stringify(this.favorites));
-        
-        // Update UI
-        const favoriteBtn = bookCard.querySelector('.favorite-btn');
-        const isFavorited = existingIndex === -1;
-        favoriteBtn.textContent = isFavorited ? '★' : '☆';
-        favoriteBtn.classList.toggle('favorited', isFavorited);
-        
-        // Refresh favorites view if currently viewing
-        if (this.currentView === 'favorites') {
-            this.displayFavorites();
-        }
-    }
-
-    extractBookData(bookCard, bookId) {
-        const fullBook = JSON.parse(bookCard.getAttribute("data-book"));
-        return {
-            ...fullBook,
-            id: bookId,
-            uniqueId: bookId
-        };
-        }
-
-    async readBook(bookId) {
-  try {
-    const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
-    if (!bookCard) return alert("Book not found.");
-
-    const book = JSON.parse(bookCard.getAttribute("data-book"));
-
-    const epubUrl = book.formats?.["application/epub+zip"];
-    const pdfUrl  = book.formats?.["application/pdf"];
-    const htmlUrl = book.formats?.["text/html"] || book.formats?.["text/plain"];
-
-    let type = "";
-    let chosenUrl = "";
-
-    if (epubUrl) { type = "epub"; chosenUrl = epubUrl; }
-    else if (pdfUrl) { type = "pdf"; chosenUrl = pdfUrl; }
-    else if (htmlUrl) { type = "html"; chosenUrl = htmlUrl; }
-
-    if (!chosenUrl) return alert("Online reading not available.");
-
-    // Força https quando possível
-    if (chosenUrl.startsWith("http://")) {
-      chosenUrl = chosenUrl.replace("http://", "https://");
-    }
-
-    // Proxy para EPUB/PDF (Gutenberg + Google)
-    const needsProxy =
-      (type === "epub" || type === "pdf") &&
-      (chosenUrl.includes("gutenberg.org") || chosenUrl.includes("books.google"));
-
-    if (needsProxy) {
-      chosenUrl = `${location.origin}/proxy?url=${encodeURIComponent(chosenUrl)}`;
-    }
-
-    const readerUrl =
-      `reader.html?type=${encodeURIComponent(type)}` +
-      `&url=${encodeURIComponent(chosenUrl)}` +
-      `&title=${encodeURIComponent(book.title || "Book")}` +
-      `&source=${encodeURIComponent(book.source || "")}` +
-      `&preview=${encodeURIComponent(book.formats?.["text/html"] || "")}`;
-
-    window.open(readerUrl, "_blank", "noopener,noreferrer,width=1100,height=800");
-  } catch (e) {
-    console.error(e);
-    alert("Error opening reader.");
   }
-}
 
-    async downloadBook(bookId) {
-        try {
-            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
-            const book = JSON.parse(bookCard.getAttribute('data-book'));
-            
-            const downloadUrl = book.formats['application/epub+zip'] || 
-                              book.formats['application/pdf'] || 
-                              book.formats['text/plain'];
-            
-            if (downloadUrl) {
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                const extension = downloadUrl.includes('epub') ? 'epub' : 
-                                downloadUrl.includes('pdf') ? 'pdf' : 'txt';
-                link.download = `${book.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                alert('Download not available for this book.');
-            }
-        } catch (error) {
-            alert('Error downloading book.');
-        }
+  attachBookEventListeners(container) {
+    // Event listeners are handled via onclick attributes in createBookCard
+  }
+
+  toggleFavorite(bookId) {
+    const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+    const bookData = this.extractBookData(bookCard, bookId);
+
+    const existingIndex = this.favorites.findIndex((fav) => fav.id === bookId);
+
+    if (existingIndex > -1) {
+      this.favorites.splice(existingIndex, 1);
+    } else {
+      this.favorites.push(bookData);
     }
 
-    showFavorites() {
-        this.currentView = 'favorites';
-        this.mainView.classList.remove('active');
-        this.favoritesView.classList.add('active');
-        this.displayFavorites();
+    localStorage.setItem("favorites", JSON.stringify(this.favorites));
+
+    // Update UI
+    const favoriteBtn = bookCard.querySelector(".favorite-btn");
+    const isFavorited = existingIndex === -1;
+    favoriteBtn.textContent = isFavorited ? "★" : "☆";
+    favoriteBtn.classList.toggle("favorited", isFavorited);
+
+    // Refresh favorites view if currently viewing
+    if (this.currentView === "favorites") {
+      this.displayFavorites();
+    }
+  }
+
+  extractBookData(bookCard, bookId) {
+    const fullBook = JSON.parse(bookCard.getAttribute("data-book"));
+    return {
+      ...fullBook,
+      id: bookId,
+      uniqueId: bookId,
+    };
+  }
+
+  async readBook(bookId) {
+    try {
+      const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+      if (!bookCard) return alert("Book not found.");
+
+      const book = JSON.parse(bookCard.getAttribute("data-book"));
+
+      const epubUrl = book.formats?.["application/epub+zip"];
+      const pdfUrl = book.formats?.["application/pdf"];
+      const htmlUrl =
+        book.formats?.["text/html"] || book.formats?.["text/plain"];
+
+      let type = "";
+      let chosenUrl = "";
+
+      if (epubUrl) {
+        type = "epub";
+        chosenUrl = epubUrl;
+      } else if (pdfUrl) {
+        type = "pdf";
+        chosenUrl = pdfUrl;
+      } else if (htmlUrl) {
+        type = "html";
+        chosenUrl = htmlUrl;
+      }
+
+      if (!chosenUrl) return alert("Online reading not available.");
+
+      // Force https when possible
+      if (chosenUrl.startsWith("http://")) {
+        chosenUrl = chosenUrl.replace("http://", "https://");
+      }
+
+      // Proxy for EPUB/PDF (Gutenberg + Google)
+      const needsProxy =
+        (type === "epub" || type === "pdf") &&
+        (chosenUrl.includes("gutenberg.org") ||
+          chosenUrl.includes("books.google"));
+
+      if (needsProxy) {
+        chosenUrl = `${location.origin}/proxy?url=${encodeURIComponent(chosenUrl)}`;
+      }
+
+      const readerUrl =
+        `reader.html?type=${encodeURIComponent(type)}` +
+        `&url=${encodeURIComponent(chosenUrl)}` +
+        `&title=${encodeURIComponent(book.title || "Book")}` +
+        `&source=${encodeURIComponent(book.source || "")}` +
+        `&preview=${encodeURIComponent(book.formats?.["text/html"] || "")}`;
+
+      window.open(
+        readerUrl,
+        "_blank",
+        "noopener,noreferrer,width=1100,height=800",
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Error opening reader.");
+    }
+  }
+
+  async downloadBook(bookId) {
+    try {
+      const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+      const book = JSON.parse(bookCard.getAttribute("data-book"));
+
+      const downloadUrl =
+        book.formats["application/epub+zip"] ||
+        book.formats["application/pdf"] ||
+        book.formats["text/plain"];
+
+      if (downloadUrl) {
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        const extension = downloadUrl.includes("epub")
+          ? "epub"
+          : downloadUrl.includes("pdf")
+            ? "pdf"
+            : "txt";
+        link.download = `${book.title.replace(/[^a-z0-9]/gi, "_")}.${extension}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert("Download not available for this book.");
+      }
+    } catch (error) {
+      alert("Error downloading book.");
+    }
+  }
+
+  showFavorites() {
+    this.currentView = "favorites";
+    this.mainView.classList.remove("active");
+    this.favoritesView.classList.add("active");
+    this.displayFavorites();
+  }
+
+  showMain() {
+    this.currentView = "main";
+    this.favoritesView.classList.remove("active");
+    this.mainView.classList.add("active");
+  }
+
+  displayFavorites() {
+    if (this.favorites.length === 0) {
+      this.favoritesGrid.innerHTML =
+        '<div class="no-results">No favorite books yet</div>';
+      return;
     }
 
-    showMain() {
-        this.currentView = 'main';
-        this.favoritesView.classList.remove('active');
-        this.mainView.classList.add('active');
-    }
-
-    displayFavorites() {
-        if (this.favorites.length === 0) {
-            this.favoritesGrid.innerHTML = '<div class="no-results">No favorite books yet</div>';
-            return;
-        }
-
-        this.favoritesGrid.innerHTML = this.favorites.map(book => `
+    this.favoritesGrid.innerHTML = this.favorites
+      .map(
+        (book) => `
             <div class="book-card" data-book-id="${book.id}"
                 data-book='${JSON.stringify(book).replace(/'/g, "&apos;")}'>
                 <img src="${(book.formats && book.formats["image/jpeg"]) || book.cover}" alt="${book.title}" class="book-cover">
                 <div class="book-title">${book.title}</div>
-                <div class="book-author">by ${(book.authors || []).map(a => a.name).join(", ") || "Unknown Author"}</div>
+                <div class="book-author">by ${(book.authors || []).map((a) => a.name).join(", ") || "Unknown Author"}</div>
                 <div class="book-actions">
                 <button class="read-btn" onclick="library.readBook('${book.id}')">Read</button>
                 <button class="download-btn" onclick="library.downloadBook('${book.id}')">Download</button>
                 <button class="favorite-btn favorited" onclick="library.toggleFavorite('${book.id}')">★</button>
                 </div>
             </div>
-            `).join('');
-        }
+            `,
+      )
+      .join("");
+  }
 
+  changeTheme(theme) {
+    this.currentTheme = theme;
+    localStorage.setItem("theme", theme);
+    this.applyTheme();
+  }
 
-    changeTheme(theme) {
-        this.currentTheme = theme;
-        localStorage.setItem('theme', theme);
-        this.applyTheme();
-    }
-
-    applyTheme() {
-        document.body.setAttribute('data-theme', this.currentTheme);
-    }
+  applyTheme() {
+    document.body.setAttribute("data-theme", this.currentTheme);
+  }
 }
 
 // Initialize the library when DOM is loaded
 let library;
-document.addEventListener('DOMContentLoaded', () => {
-    library = new BaseLibrary();
+document.addEventListener("DOMContentLoaded", () => {
+  library = new BaseLibrary();
 });
