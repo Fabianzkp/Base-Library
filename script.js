@@ -190,29 +190,61 @@ class BaseLibrary {
     }
 
     extractBookData(bookCard, bookId) {
+        const fullBook = JSON.parse(bookCard.getAttribute("data-book"));
         return {
+            ...fullBook,
             id: bookId,
-            title: bookCard.querySelector('.book-title').textContent,
-            author: bookCard.querySelector('.book-author').textContent,
-            cover: bookCard.querySelector('.book-cover').src
+            uniqueId: bookId
         };
-    }
+        }
 
     async readBook(bookId) {
-        try {
-            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
-            const book = JSON.parse(bookCard.getAttribute('data-book'));
-            
-            const htmlUrl = book.formats['text/html'] || book.formats['text/plain'];
-            if (htmlUrl) {
-                window.open(htmlUrl, '_blank');
-            } else {
-                alert('Online reading not available for this book.');
-            }
-        } catch (error) {
-            alert('Error loading book for reading.');
-        }
+  try {
+    const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+    if (!bookCard) return alert("Book not found.");
+
+    const book = JSON.parse(bookCard.getAttribute("data-book"));
+
+    const epubUrl = book.formats?.["application/epub+zip"];
+    const pdfUrl  = book.formats?.["application/pdf"];
+    const htmlUrl = book.formats?.["text/html"] || book.formats?.["text/plain"];
+
+    let type = "";
+    let chosenUrl = "";
+
+    if (epubUrl) { type = "epub"; chosenUrl = epubUrl; }
+    else if (pdfUrl) { type = "pdf"; chosenUrl = pdfUrl; }
+    else if (htmlUrl) { type = "html"; chosenUrl = htmlUrl; }
+
+    if (!chosenUrl) return alert("Online reading not available.");
+
+    // Força https quando possível
+    if (chosenUrl.startsWith("http://")) {
+      chosenUrl = chosenUrl.replace("http://", "https://");
     }
+
+    // Proxy para EPUB/PDF (Gutenberg + Google)
+    const needsProxy =
+      (type === "epub" || type === "pdf") &&
+      (chosenUrl.includes("gutenberg.org") || chosenUrl.includes("books.google"));
+
+    if (needsProxy) {
+      chosenUrl = `${location.origin}/proxy?url=${encodeURIComponent(chosenUrl)}`;
+    }
+
+    const readerUrl =
+      `reader.html?type=${encodeURIComponent(type)}` +
+      `&url=${encodeURIComponent(chosenUrl)}` +
+      `&title=${encodeURIComponent(book.title || "Book")}` +
+      `&source=${encodeURIComponent(book.source || "")}` +
+      `&preview=${encodeURIComponent(book.formats?.["text/html"] || "")}`;
+
+    window.open(readerUrl, "_blank", "noopener,noreferrer,width=1100,height=800");
+  } catch (e) {
+    console.error(e);
+    alert("Error opening reader.");
+  }
+}
 
     async downloadBook(bookId) {
         try {
@@ -260,18 +292,20 @@ class BaseLibrary {
         }
 
         this.favoritesGrid.innerHTML = this.favorites.map(book => `
-            <div class="book-card" data-book-id="${book.id}">
-                <img src="${book.cover}" alt="${book.title}" class="book-cover">
+            <div class="book-card" data-book-id="${book.id}"
+                data-book='${JSON.stringify(book).replace(/'/g, "&apos;")}'>
+                <img src="${(book.formats && book.formats["image/jpeg"]) || book.cover}" alt="${book.title}" class="book-cover">
                 <div class="book-title">${book.title}</div>
-                <div class="book-author">${book.author}</div>
+                <div class="book-author">by ${(book.authors || []).map(a => a.name).join(", ") || "Unknown Author"}</div>
                 <div class="book-actions">
-                    <button class="read-btn" onclick="library.readBook(${book.id})">Read</button>
-                    <button class="download-btn" onclick="library.downloadBook(${book.id})">Download</button>
-                    <button class="favorite-btn favorited" onclick="library.toggleFavorite(${book.id})">★</button>
+                <button class="read-btn" onclick="library.readBook('${book.id}')">Read</button>
+                <button class="download-btn" onclick="library.downloadBook('${book.id}')">Download</button>
+                <button class="favorite-btn favorited" onclick="library.toggleFavorite('${book.id}')">★</button>
                 </div>
             </div>
-        `).join('');
-    }
+            `).join('');
+        }
+
 
     changeTheme(theme) {
         this.currentTheme = theme;
