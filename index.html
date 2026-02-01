@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Library</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Base Library</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search for books...">
+            <div class="filter-container">
+                <select id="categoryFilter">
+                    <option value="all">All</option>
+                    <option value="fiction">Fiction</option>
+                    <option value="non-fiction">Non-Fiction</option>
+                </select>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="favoritesBtn">My Favorites</button>
+            <select id="themeSelector">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="sepia">Sepia</option>
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <div id="mainView" class="view active">
+            <div id="bookGrid"></div>
+        </div>
+
+        <div id="favoritesView" class="view">
+            <h2>My Favorites</h2>
+            <button id="backToMain">Back to Library</button>
+            <div id="favoritesGrid"></div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
