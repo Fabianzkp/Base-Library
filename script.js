@@ -17,12 +17,14 @@ class BaseLibrary {
     this.bookGrid = document.getElementById("bookGrid");
     this.favoritesGrid = document.getElementById("favoritesGrid");
     this.favoritesBtn = document.getElementById("favoritesBtn");
+    this.continueReadingBtn = document.getElementById("continueReadingBtn");
     this.backToMainBtn = document.getElementById("backToMain");
     this.themeSelector = document.getElementById("themeSelector");
     this.mainView = document.getElementById("mainView");
     this.favoritesView = document.getElementById("favoritesView");
 
     this.themeSelector.value = this.currentTheme;
+    this.updateContinueReadingButton();
   }
 
   setupEventListeners() {
@@ -36,6 +38,7 @@ class BaseLibrary {
 
     this.categoryFilter.addEventListener("change", () => this.searchBooks());
     this.favoritesBtn.addEventListener("click", () => this.showFavorites());
+    this.continueReadingBtn.addEventListener("click", () => this.continueReading());
     this.backToMainBtn.addEventListener("click", () => this.showMain());
     this.themeSelector.addEventListener("change", (e) =>
       this.changeTheme(e.target.value),
@@ -269,10 +272,55 @@ class BaseLibrary {
         "_blank",
         "noopener,noreferrer,width=1100,height=800",
       );
+      
+      // Save reading progress
+      this.saveReadingProgress({
+        bookId: bookId,
+        book: book,
+        type: type,
+        url: chosenUrl,
+        timestamp: Date.now()
+      });
     } catch (e) {
       console.error(e);
       alert("Error opening reader.");
     }
+  }
+
+  saveReadingProgress(progress) {
+    localStorage.setItem("currentReading", JSON.stringify(progress));
+    this.updateContinueReadingButton();
+  }
+
+  updateContinueReadingButton() {
+    const currentReading = localStorage.getItem("currentReading");
+    if (currentReading && this.continueReadingBtn) {
+      this.continueReadingBtn.style.display = "block";
+    } else if (this.continueReadingBtn) {
+      this.continueReadingBtn.style.display = "none";
+    }
+  }
+
+  continueReading() {
+    const currentReading = JSON.parse(localStorage.getItem("currentReading"));
+    if (!currentReading) {
+      alert("No book to continue reading.");
+      return;
+    }
+
+    const readerUrl =
+      `reader.html?type=${encodeURIComponent(currentReading.type)}` +
+      `&url=${encodeURIComponent(currentReading.url)}` +
+      `&title=${encodeURIComponent(currentReading.book.title || "Book")}` +
+      `&source=${encodeURIComponent(currentReading.book.source || "")}` +
+      `&preview=${encodeURIComponent(currentReading.book.formats?.["text/html"] || "")}` +
+      `&position=${encodeURIComponent(currentReading.position || "")}`;
+
+    window.open(
+      readerUrl,
+      "_blank",
+      "noopener,noreferrer,width=1100,height=800",
+    );
   }
 
   async downloadBook(bookId) {

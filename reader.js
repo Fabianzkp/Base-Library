@@ -5,6 +5,7 @@
   const type = params.get("type"); // epub | pdf | html
   const title = params.get("title") || "Reader";
   const preview = params.get("preview"); // link HTML (Google Books) if exist
+  const position = params.get("position"); // saved reading position
 
 
   const titleEl = document.getElementById("title");
@@ -95,7 +96,7 @@
       spread: "none"
     });
 
-    await rendition.display();
+    await rendition.display(position || undefined);
     setStatus("EPUB loaded successfully");
 
     prevBtn.onclick = () => {
@@ -104,6 +105,13 @@
     nextBtn.onclick = () => {
       rendition.next();
     };
+
+    // Save position when user navigates
+    rendition.on("relocated", (location) => {
+      const currentReading = JSON.parse(localStorage.getItem("currentReading") || "{}");
+      currentReading.position = location.start.cfi;
+      localStorage.setItem("currentReading", JSON.stringify(currentReading));
+    });
 
     try {
       await book.locations.generate(1200);
