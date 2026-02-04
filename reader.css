@@ -52,3 +52,17 @@ body {
 .hidden {
   display: none !important;
 }
+
+
+/* PDF theme filters */
+body[data-theme="dark"] #pdfCanvas {
+  filter: invert(1) hue-rotate(180deg) contrast(1.05) brightness(0.95);
+}
+
+body[data-theme="sepia"] #pdfCanvas {
+  filter: sepia(0.6) contrast(1.05) brightness(1.02);
+}
+
+body[data-theme="light"] #pdfCanvas {
+  filter: none;
+}

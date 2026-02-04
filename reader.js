@@ -7,25 +7,22 @@
   const preview = params.get("preview"); // link HTML (Google Books) if exist
   const position = params.get("position"); // saved reading position
 
+  // Theme sync with main app
+  const THEME_KEY = "theme";
 
   const titleEl = document.getElementById("title");
   const pageInfoEl = document.getElementById("pageInfo");
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
 
+  const themeSelector = document.getElementById("themeSelector");
+
   const viewer = document.getElementById("viewer");
   const pdfCanvas = document.getElementById("pdfCanvas");
   const htmlFrame = document.getElementById("htmlFrame");
-  
 
-  function showOnly(which) {
-    viewer.classList.add("hidden");
-    pdfCanvas.classList.add("hidden");
-    htmlFrame.classList.add("hidden");
-
-    if (which === "epub") viewer.classList.remove("hidden");
-    if (which === "pdf") pdfCanvas.classList.remove("hidden");
-    if (which === "html") htmlFrame.classList.remove("hidden");
+  function applyTheme(theme) {
+    document.body.setAttribute("data-theme", theme || "light");
   }
 
   function setStatus(text) {
@@ -36,6 +33,94 @@
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function showOnly(which) {
+    viewer.classList.add("hidden");
+    pdfCanvas.classList.add("hidden");
+    htmlFrame.classList.add("hidden");
+
+    // por padrão mostra botões (html vai esconder depois)
+    prevBtn.style.display = "";
+    nextBtn.style.display = "";
+
+    if (which === "epub") viewer.classList.remove("hidden");
+    if (which === "pdf") pdfCanvas.classList.remove("hidden");
+    if (which === "html") htmlFrame.classList.remove("hidden");
+  }
+
+  // =========================
+  // THEME: state + listener
+  // =========================
+  let currentTheme = localStorage.getItem(THEME_KEY) || "light";
+  applyTheme(currentTheme);
+
+  if (themeSelector) {
+    themeSelector.value = currentTheme;
+
+    themeSelector.addEventListener("change", () => {
+      currentTheme = themeSelector.value || "light";
+      localStorage.setItem(THEME_KEY, currentTheme);
+
+      // 1) aplica no layout do reader (body/header etc via CSS)
+      applyTheme(currentTheme);
+
+      // 2) aplica no EPUB (se estiver aberto)
+      applyEpubTheme(window.__epubRendition, currentTheme);
+
+      // 3) tenta aplicar no iframe (só funciona same-origin)
+      tryApplyIframeTheme(currentTheme);
+    });
+  }
+
+  // =========================
+  // EPUB helpers
+  // =========================
+  function registerEpubThemes(rendition) {
+    rendition.themes.register("light", {
+      body: { background: "#ffffff", color: "#111111" }
+    });
+
+    rendition.themes.register("sepia", {
+      body: { background: "#f4ecd8", color: "#2b2217" }
+    });
+
+    rendition.themes.register("dark", {
+      body: { background: "#0f1115", color: "#e8e8e8" }
+    });
+  }
+
+  function applyEpubTheme(rendition, theme) {
+    if (!rendition) return;
+    rendition.themes.select(theme || "light");
+  }
+
+  // HTML iframe theme helper (somente same-origin)
+  function tryApplyIframeTheme(theme) {
+    try {
+      const doc = htmlFrame.contentDocument || htmlFrame.contentWindow.document;
+      if (!doc || !doc.body) return;
+
+      doc.body.setAttribute("data-theme", theme);
+
+      let style = doc.getElementById("readerThemeStyle");
+      if (!style) {
+        style = doc.createElement("style");
+        style.id = "readerThemeStyle";
+        doc.head.appendChild(style);
+      }
+
+      style.textContent = `
+        body[data-theme="dark"] { background:#0f1115 !important; color:#e8e8e8 !important; }
+        body[data-theme="sepia"] { background:#f4ecd8 !important; color:#2b2217 !important; }
+        body[data-theme="light"] { background:#ffffff !important; color:#111111 !important; }
+      `;
+    } catch (e) {
+      // cross-origin: não dá pra acessar o conteúdo do iframe
+    }
+  }
+
+  // =========================
+  // Validate params
+  // =========================
   if (!rawUrl || !type) {
     titleEl.textContent = "Invalid reader link";
     setStatus("Missing url or type.");
@@ -44,6 +129,7 @@
 
   let bookUrl = decodeURIComponent(rawUrl);
 
+  // se vier path relativo tipo "/proxy?..."
   if (bookUrl.startsWith("/")) {
     bookUrl = new URL(bookUrl, window.location.origin).toString();
   }
@@ -55,90 +141,80 @@
     if (e.key === "ArrowRight") nextBtn.click();
   });
 
- async function initEpub() {
-  showOnly("epub");
-  setStatus("Loading EPUB…");
-
-  try {
-    console.log("Fetching EPUB from:", bookUrl);
-    const resp = await fetch(bookUrl);
-    if (!resp.ok) {
-      throw new Error(`Failed to fetch EPUB: ${resp.status} ${resp.statusText}`);
-    }
-
-    const arrayBuffer = await resp.arrayBuffer();
-    console.log("EPUB file size:", arrayBuffer.byteLength, "bytes");
-
-    // EPUB = ZIP. if doesn't start with "PK", it's not a valid epub
-    const sig = new Uint8Array(arrayBuffer.slice(0, 4));
-    const isZip = sig[0] === 0x50 && sig[1] === 0x4B; // 'P' 'K'
-
-    if (!isZip) {
-      console.warn("Not a ZIP/EPUB. File signature:", Array.from(sig).map(b => b.toString(16)).join(' '));
-      if (preview) {
-        setStatus("EPUB not available. Loading HTML preview...");
-        setTimeout(() => {
-          window.location.href = `reader.html?type=html&url=${encodeURIComponent(decodeURIComponent(preview))}&title=${encodeURIComponent(decodeURIComponent(title))}`;
-        }, 1000);
-        return;
-      }
-      throw new Error("Not a valid EPUB file (invalid ZIP signature).");
-    }
-
-    // Initialize EPUB.js book
-    const book = new ePub();
-    await book.open(arrayBuffer);
-
-    const rendition = book.renderTo("viewer", {
-      width: "100%",
-      height: "100%",
-      flow: "paginated",
-      spread: "none"
-    });
-
-    await rendition.display(position || undefined);
-    setStatus("EPUB loaded successfully");
-
-    prevBtn.onclick = () => {
-      rendition.prev();
-    };
-    nextBtn.onclick = () => {
-      rendition.next();
-    };
-
-    // Save position when user navigates
-    rendition.on("relocated", (location) => {
-      const currentReading = JSON.parse(localStorage.getItem("currentReading") || "{}");
-      currentReading.position = location.start.cfi;
-      localStorage.setItem("currentReading", JSON.stringify(currentReading));
-    });
+  // =========================
+  // EPUB
+  // =========================
+  async function initEpub() {
+    showOnly("epub");
+    setStatus("Loading EPUB…");
 
     try {
-      await book.locations.generate(1200);
-      rendition.on("relocated", (location) => {
-        const current = book.locations.locationFromCfi(location.start.cfi);
-        const total = book.locations.total;
-        if (current && total) setStatus(`Page ${current} / ${total}`);
+      const resp = await fetch(bookUrl);
+      if (!resp.ok) throw new Error(`Failed to fetch EPUB: ${resp.status}`);
+
+      const arrayBuffer = await resp.arrayBuffer();
+
+      // EPUB = ZIP. if doesn't start with "PK", it's not a valid epub
+      const sig = new Uint8Array(arrayBuffer.slice(0, 4));
+      const isZip = sig[0] === 0x50 && sig[1] === 0x4B; // 'P' 'K'
+
+      if (!isZip) {
+        console.warn("Not a ZIP/EPUB. Probably HTML/blocked.");
+        if (preview) {
+          setStatus("Google Books does not provide EPUB. Opening preview…");
+          window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error("Not a valid EPUB (not a zip).");
+      }
+
+      const book = ePub();
+      await book.open(arrayBuffer, "binary");
+
+      const rendition = book.renderTo("viewer", {
+        width: "100%",
+        height: "100%",
+        flow: "paginated",
+        spread: "none"
       });
-    } catch (locErr) {
-      console.warn("Location generation failed:", locErr);
-      setStatus("EPUB loaded (page numbers unavailable)");
+
+    
+      window.__epubRendition = rendition;
+
+      registerEpubThemes(rendition);
+      applyEpubTheme(rendition, currentTheme);
+
+      await rendition.display();
+
+      prevBtn.onclick = () => rendition.prev();
+      nextBtn.onclick = () => rendition.next();
+
+      try {
+        await book.locations.generate(1200);
+        rendition.on("relocated", (location) => {
+          const current = book.locations.locationFromCfi(location.start.cfi);
+          const total = book.locations.total;
+          if (current && total) setStatus(`Page ${current} / ${total}`);
+        });
+      } catch {
+        setStatus("");
+      }
+    } catch (err) {
+      console.warn("EPUB error:", err);
+
+      if (preview) {
+        setStatus("Unable to open EPUB. Opening preview…");
+        window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      setStatus("Error loading EPUB.");
     }
-  } catch (err) {
-    console.error("EPUB loading error:", err);
-
-    if (preview) {
-      setStatus("Unable to open EPUB. Loading HTML preview...");
-      setTimeout(() => {
-        window.location.href = `reader.html?type=html&url=${encodeURIComponent(decodeURIComponent(preview))}&title=${encodeURIComponent(decodeURIComponent(title))}`;
-      }, 1000);
-      return;
-    }
-
-
   }
-}
 
+  // =========================
+  // PDF
+  // =========================
   async function initPdf() {
     showOnly("pdf");
     setStatus("Loading PDF…");
@@ -184,6 +260,9 @@
     }
   }
 
+  // =========================
+  // HTML
+  // =========================
   function initHtml() {
     showOnly("html");
     setStatus("Loading HTML...");
@@ -192,36 +271,19 @@
     const scrollStep = 500;
 
     try {
-      const htmlUrl = preview || bookUrl;
-      htmlFrame.src = htmlUrl;
-      
-      prevBtn.onclick = () => {
-        scrollPosition = Math.max(0, scrollPosition - scrollStep);
-        try {
-          htmlFrame.contentWindow.scrollTo(0, scrollPosition);
-        } catch (e) {
-          console.log('Cross-origin restriction, buttons disabled for external content');
-          setStatus('Use browser scroll to navigate');
-        }
-      };
-
-      nextBtn.onclick = () => {
-        scrollPosition += scrollStep;
-        try {
-          htmlFrame.contentWindow.scrollTo(0, scrollPosition);
-        } catch (e) {
-          console.log('Cross-origin restriction, buttons disabled for external content');
-          setStatus('Use browser scroll to navigate');
-        }
-      };
+      htmlFrame.src = bookUrl;
+      htmlFrame.onload = () => tryApplyIframeTheme(currentTheme);
     } catch (err) {
       openDirect(preview || bookUrl);
     }
   }
 
+  // =========================
+  // Start
+  // =========================
   (async function start() {
     if (type === "epub") return await initEpub();
     if (type === "pdf") return await initPdf();
     return initHtml();
-  })()
+  })();
 })();
