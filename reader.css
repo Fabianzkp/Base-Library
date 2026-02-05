@@ -28,6 +28,15 @@ body {
   cursor: pointer;
 }
 
+.reader-theme {
+  padding: 8px 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f0f0f0;
+  font-size: inherit;
+}
+
 .viewer-wrap {
   height: calc(100vh - 54px);
 }

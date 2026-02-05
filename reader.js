@@ -68,6 +68,11 @@
 
       // 3) tenta aplicar no iframe (só funciona same-origin)
       tryApplyIframeTheme(currentTheme);
+      
+      // 4) aplica tema no container do iframe como fallback
+      if (type === 'html') {
+        applyIframeContainerTheme(currentTheme);
+      }
     });
   }
 
@@ -161,8 +166,10 @@
       if (!isZip) {
         console.warn("Not a ZIP/EPUB. Probably HTML/blocked.");
         if (preview) {
-          setStatus("Google Books does not provide EPUB. Opening preview…");
-          window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
+          setStatus("EPUB not available. Loading HTML preview...");
+          setTimeout(() => {
+            window.location.href = `reader.html?type=html&url=${encodeURIComponent(decodeURIComponent(preview))}&title=${encodeURIComponent(decodeURIComponent(title))}`;
+          }, 1000);
           return;
         }
         throw new Error("Not a valid EPUB (not a zip).");
@@ -203,8 +210,10 @@
       console.warn("EPUB error:", err);
 
       if (preview) {
-        setStatus("Unable to open EPUB. Opening preview…");
-        window.open(decodeURIComponent(preview), "_blank", "noopener,noreferrer");
+        setStatus("Unable to open EPUB. Loading HTML preview...");
+        setTimeout(() => {
+          window.location.href = `reader.html?type=html&url=${encodeURIComponent(decodeURIComponent(preview))}&title=${encodeURIComponent(decodeURIComponent(title))}`;
+        }, 1000);
         return;
       }
 
@@ -272,10 +281,30 @@
 
     try {
       htmlFrame.src = bookUrl;
-      htmlFrame.onload = () => tryApplyIframeTheme(currentTheme);
+      htmlFrame.onload = () => {
+        tryApplyIframeTheme(currentTheme);
+        // Apply theme to iframe container as fallback
+        applyIframeContainerTheme(currentTheme);
+      };
+      
+      // Apply initial theme to container
+      applyIframeContainerTheme(currentTheme);
     } catch (err) {
       openDirect(preview || bookUrl);
     }
+  }
+
+  // Apply theme to iframe container when content can't be accessed
+  function applyIframeContainerTheme(theme) {
+    const themes = {
+      light: { background: '#ffffff', filter: 'none' },
+      sepia: { background: '#f4ecd8', filter: 'sepia(0.3) contrast(0.9)' },
+      dark: { background: '#0f1115', filter: 'invert(0.9) hue-rotate(180deg) contrast(0.8)' }
+    };
+    
+    const themeStyle = themes[theme] || themes.light;
+    htmlFrame.style.background = themeStyle.background;
+    htmlFrame.style.filter = themeStyle.filter;
   }
 
   // =========================
