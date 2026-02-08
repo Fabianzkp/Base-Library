@@ -21,6 +21,39 @@
   const pdfCanvas = document.getElementById("pdfCanvas");
   const htmlFrame = document.getElementById("htmlFrame");
 
+  let zoomLevel = 1; // valor lógico unificado
+
+  function zoomIn() {
+    zoomLevel = Math.min(zoomLevel + 0.1, 2.5);
+    applyZoom();
+  }
+
+  function zoomOut() {
+    zoomLevel = Math.max(zoomLevel - 0.1, 0.6);
+    applyZoom();
+  }
+
+  function applyZoom() {
+    // EPUB → font-size
+    if (type === "epub" && window.__epubRendition) {
+      const percent = Math.round(zoomLevel * 100);
+      window.__epubRendition.themes.fontSize(`${percent}%`);
+      return;
+    }
+
+    // PDF → scale real
+    if (type === "pdf" && window.__renderPdfPage) {
+      window.__renderPdfPage();
+      return;
+    }
+
+    // HTML → transform
+    if (type === "html") {
+      htmlFrame.style.transform = `scale(${zoomLevel})`;
+      htmlFrame.style.transformOrigin = "0 0";
+    }
+  }
+
   function applyTheme(theme) {
     document.body.setAttribute("data-theme", theme || "light");
   }
@@ -68,9 +101,9 @@
 
       // 3) tenta aplicar no iframe (só funciona same-origin)
       tryApplyIframeTheme(currentTheme);
-      
+
       // 4) aplica tema no container do iframe como fallback
-      if (type === 'html') {
+      if (type === "html") {
         applyIframeContainerTheme(currentTheme);
       }
     });
@@ -81,15 +114,15 @@
   // =========================
   function registerEpubThemes(rendition) {
     rendition.themes.register("light", {
-      body: { background: "#ffffff", color: "#111111" }
+      body: { background: "#ffffff", color: "#111111" },
     });
 
     rendition.themes.register("sepia", {
-      body: { background: "#f4ecd8", color: "#2b2217" }
+      body: { background: "#f4ecd8", color: "#2b2217" },
     });
 
     rendition.themes.register("dark", {
-      body: { background: "#0f1115", color: "#e8e8e8" }
+      body: { background: "#0f1115", color: "#e8e8e8" },
     });
   }
 
@@ -161,7 +194,7 @@
 
       // EPUB = ZIP. if doesn't start with "PK", it's not a valid epub
       const sig = new Uint8Array(arrayBuffer.slice(0, 4));
-      const isZip = sig[0] === 0x50 && sig[1] === 0x4B; // 'P' 'K'
+      const isZip = sig[0] === 0x50 && sig[1] === 0x4b; // 'P' 'K'
 
       if (!isZip) {
         console.warn("Not a ZIP/EPUB. Probably HTML/blocked.");
@@ -182,11 +215,11 @@
         width: "100%",
         height: "100%",
         flow: "paginated",
-        spread: "none"
+        spread: "none",
       });
 
-    
       window.__epubRendition = rendition;
+      applyZoom();
 
       registerEpubThemes(rendition);
       applyEpubTheme(rendition, currentTheme);
@@ -236,11 +269,12 @@
       const loadingTask = pdfjsLib.getDocument(bookUrl);
       const pdf = await loadingTask.promise;
 
+      let scale = zoomLevel;
       let pageNum = 1;
 
       async function renderPage(num) {
         const page = await pdf.getPage(num);
-        const viewport = page.getViewport({ scale: 1.4 });
+        const viewport = page.getViewport({ scale });
 
         const ctx = pdfCanvas.getContext("2d");
         pdfCanvas.height = viewport.height;
@@ -249,6 +283,11 @@
         await page.render({ canvasContext: ctx, viewport }).promise;
         setStatus(`Page ${pageNum} / ${pdf.numPages}`);
       }
+
+      window.__renderPdfPage = async () => {
+        scale = zoomLevel;
+        await renderPage(pageNum);
+      };
 
       prevBtn.onclick = async () => {
         if (pageNum <= 1) return;
@@ -286,7 +325,7 @@
         // Apply theme to iframe container as fallback
         applyIframeContainerTheme(currentTheme);
       };
-      
+      applyZoom();
       // Apply initial theme to container
       applyIframeContainerTheme(currentTheme);
     } catch (err) {
@@ -297,11 +336,14 @@
   // Apply theme to iframe container when content can't be accessed
   function applyIframeContainerTheme(theme) {
     const themes = {
-      light: { background: '#ffffff', filter: 'none' },
-      sepia: { background: '#f4ecd8', filter: 'sepia(0.3) contrast(0.9)' },
-      dark: { background: '#0f1115', filter: 'invert(0.9) hue-rotate(180deg) contrast(0.8)' }
+      light: { background: "#ffffff", filter: "none" },
+      sepia: { background: "#f4ecd8", filter: "sepia(0.3) contrast(0.9)" },
+      dark: {
+        background: "#0f1115",
+        filter: "invert(0.9) hue-rotate(180deg) contrast(0.8)",
+      },
     };
-    
+
     const themeStyle = themes[theme] || themes.light;
     htmlFrame.style.background = themeStyle.background;
     htmlFrame.style.filter = themeStyle.filter;
@@ -315,4 +357,9 @@
     if (type === "pdf") return await initPdf();
     return initHtml();
   })();
+  document.getElementById("zoomIn")?.addEventListener("click", zoomIn);
+  document.getElementById("zoomOut")?.addEventListener("click", zoomOut);
+
+  window.zoomIn = zoomIn;
+  window.zoomOut = zoomOut;
 })();
