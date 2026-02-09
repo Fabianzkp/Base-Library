@@ -20,6 +20,7 @@
   const viewer = document.getElementById("viewer");
   const pdfCanvas = document.getElementById("pdfCanvas");
   const htmlFrame = document.getElementById("htmlFrame");
+  const clickOverlay = document.getElementById("clickOverlay");
 
   let zoomLevel = 1; // valor lógico unificado
 
@@ -70,12 +71,16 @@
     viewer.classList.add("hidden");
     pdfCanvas.classList.add("hidden");
     htmlFrame.classList.add("hidden");
+    clickOverlay.classList.add("hidden");
 
     // por padrão mostra botões (html vai esconder depois)
     prevBtn.style.display = "";
     nextBtn.style.display = "";
 
-    if (which === "epub") viewer.classList.remove("hidden");
+    if (which === "epub") {
+      viewer.classList.remove("hidden");
+      clickOverlay.classList.remove("hidden");
+    }
     if (which === "pdf") pdfCanvas.classList.remove("hidden");
     if (which === "html") htmlFrame.classList.remove("hidden");
   }
@@ -235,24 +240,27 @@
       prevBtn.onclick = () => rendition.prev();
       nextBtn.onclick = () => rendition.next();
 
-      // EPUB.js creates an iframe, so we use rendition.on for clicks
-      rendition.on("click", (event) => {
-        const clickX = event.clientX;
-        if (clickX < window.innerWidth / 2) {
+      // Use overlay for click detection
+      clickOverlay.addEventListener("click", (e) => {
+        const rect = clickOverlay.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        
+        if (clickX < width / 2) {
           rendition.prev();
         } else {
           rendition.next();
         }
       });
 
-      // Keyboard navigation
-      rendition.on("keydown", (event) => {
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
+      // Keyboard navigation on document
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
           rendition.prev();
         }
-        if (event.key === "ArrowRight") {
-          event.preventDefault();
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
           rendition.next();
         }
       });
@@ -353,8 +361,11 @@
 
       // Click navigation for PDF - attach to canvas
       pdfCanvas.addEventListener("click", (e) => {
-        const clickX = e.clientX;
-        if (clickX < window.innerWidth / 2) {
+        const canvasRect = pdfCanvas.getBoundingClientRect();
+        const clickX = e.clientX - canvasRect.left;
+        const canvasWidth = canvasRect.width;
+        
+        if (clickX < canvasWidth / 2) {
           goToPrev();
         } else {
           goToNext();
