@@ -235,6 +235,28 @@
       registerEpubThemes(rendition);
       applyEpubTheme(rendition, currentTheme);
 
+      // Inject tap highlight removal into EPUB content
+      rendition.hooks.content.register((contents) => {
+        const doc = contents.document;
+        if (!doc) return;
+        
+        let style = doc.getElementById("tapHighlightRemoval");
+        if (!style) {
+          style = doc.createElement("style");
+          style.id = "tapHighlightRemoval";
+          doc.head.appendChild(style);
+        }
+        
+        style.textContent = `
+          * {
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+          }
+        `;
+      });
+
       await rendition.display(position || undefined);
 
       prevBtn.onclick = () => rendition.prev();
