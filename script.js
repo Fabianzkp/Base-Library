@@ -4,9 +4,11 @@ class BaseLibrary {
     this.currentTheme = localStorage.getItem("theme") || "light";
     this.searchTimeout = null;
     this.currentView = "main";
+    this.lastScrollY = 0;
 
     this.initializeElements();
     this.setupEventListeners();
+    this.setupScrollBehavior();
     this.applyTheme();
     this.performInitialSearch();
   }
@@ -43,6 +45,31 @@ class BaseLibrary {
     this.themeSelector.addEventListener("change", (e) =>
       this.changeTheme(e.target.value),
     );
+  }
+
+  setupScrollBehavior() {
+    let ticking = false;
+    const header = document.querySelector('header');
+    
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          if (currentScrollY > this.lastScrollY && currentScrollY > 100) {
+            // Scrolling down & past threshold
+            header.classList.add('hidden');
+          } else {
+            // Scrolling up
+            header.classList.remove('hidden');
+          }
+          
+          this.lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
   }
 
   async fetchBooks(query = "", category = "all") {

@@ -68,5 +68,7 @@ Livia Costa Galletti Lira de Medeiros:
 
 ---
 
-LIVE SITE:
-https://base-library.onrender.com/
+- LIVE SITE:
+  https://base-library.onrender.com/
+
+- To start the site, use "node server.js"
