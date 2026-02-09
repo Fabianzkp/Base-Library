@@ -128,7 +128,18 @@
 
   function applyEpubTheme(rendition, theme) {
     if (!rendition) return;
-    rendition.themes.select(theme || "light");
+    
+    // Override styles directly instead of using theme system
+    const themes = {
+      light: { background: "#ffffff", color: "#111111" },
+      sepia: { background: "#f4ecd8", color: "#2b2217" },
+      dark: { background: "#0f1115", color: "#e8e8e8" }
+    };
+    
+    const selectedTheme = themes[theme] || themes.light;
+    
+    rendition.themes.override("background", selectedTheme.background);
+    rendition.themes.override("color", selectedTheme.color);
   }
 
   // HTML iframe theme helper (somente same-origin)
@@ -224,10 +235,17 @@
       registerEpubThemes(rendition);
       applyEpubTheme(rendition, currentTheme);
 
-      await rendition.display();
+      await rendition.display(position || undefined);
 
       prevBtn.onclick = () => rendition.prev();
       nextBtn.onclick = () => rendition.next();
+
+      // Save position when user navigates
+      rendition.on("relocated", (location) => {
+        const currentReading = JSON.parse(localStorage.getItem("currentReading") || "{}");
+        currentReading.position = location.start.cfi;
+        localStorage.setItem("currentReading", JSON.stringify(currentReading));
+      });
 
       try {
         await book.locations.generate(1200);
