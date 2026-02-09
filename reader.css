@@ -1,6 +1,8 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .reader-header {
@@ -40,11 +42,13 @@ body {
 .viewer-wrap {
   height: calc(100vh - 54px);
   position: relative;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .viewer {
   height: 100%;
   width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .click-overlay {
@@ -60,6 +64,8 @@ body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  outline: none;
+  background: transparent;
 }
 
 .pdf-canvas {
