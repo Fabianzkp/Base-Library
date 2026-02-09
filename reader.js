@@ -185,11 +185,6 @@
 
   titleEl.textContent = decodeURIComponent(title);
 
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") prevBtn.click();
-    if (e.key === "ArrowRight") nextBtn.click();
-  });
-
   // =========================
   // EPUB
   // =========================
@@ -239,6 +234,28 @@
 
       prevBtn.onclick = () => rendition.prev();
       nextBtn.onclick = () => rendition.next();
+
+      // EPUB.js creates an iframe, so we use rendition.on for clicks
+      rendition.on("click", (event) => {
+        const clickX = event.clientX;
+        if (clickX < window.innerWidth / 2) {
+          rendition.prev();
+        } else {
+          rendition.next();
+        }
+      });
+
+      // Keyboard navigation
+      rendition.on("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          rendition.prev();
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          rendition.next();
+        }
+      });
 
       // Save position when user navigates
       rendition.on("relocated", (location) => {
@@ -307,17 +324,42 @@
         await renderPage(pageNum);
       };
 
-      prevBtn.onclick = async () => {
+      const goToPrev = async () => {
         if (pageNum <= 1) return;
         pageNum--;
         await renderPage(pageNum);
       };
 
-      nextBtn.onclick = async () => {
+      const goToNext = async () => {
         if (pageNum >= pdf.numPages) return;
         pageNum++;
         await renderPage(pageNum);
       };
+
+      prevBtn.onclick = goToPrev;
+      nextBtn.onclick = goToNext;
+
+      // Keyboard navigation for PDF
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          goToPrev();
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          goToNext();
+        }
+      });
+
+      // Click navigation for PDF - attach to canvas
+      pdfCanvas.addEventListener("click", (e) => {
+        const clickX = e.clientX;
+        if (clickX < window.innerWidth / 2) {
+          goToPrev();
+        } else {
+          goToNext();
+        }
+      });
 
       await renderPage(pageNum);
     } catch (err) {
