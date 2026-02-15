@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path"); // Added for path handling
 
 const app = express();
 const PORT = 3000;
@@ -80,6 +81,10 @@ app.get("/proxy", async (req, res) => {
 
 
 
+// IMPORT ROUTES
+const mainRouter = require("./routes/index");
+app.use("/", mainRouter); 
+
 // LOGIN
 
 // Leer usuarios
@@ -143,6 +148,7 @@ app.post("/login", async (req, res) => {
     email: user.email
   });
 });
+
 
 app.listen(PORT, () => {
   console.log(`✅ Open: http://localhost:${PORT}/index.html`);
