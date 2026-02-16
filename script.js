@@ -147,7 +147,15 @@ class BaseLibrary {
     const category = this.categoryFilter.value;
 
     const books = await this.fetchBooks(query, category);
-    this.displayBooks(books, this.bookGrid);
+    
+    // Filter books to only show exact or close title matches
+    const filteredBooks = query === "popular" ? books : books.filter(book => {
+      const bookTitle = (book.title || "").toLowerCase();
+      const searchQuery = query.toLowerCase();
+      return bookTitle.includes(searchQuery);
+    });
+    
+    this.displayBooks(filteredBooks, this.bookGrid);
   }
 
   async performInitialSearch() {
