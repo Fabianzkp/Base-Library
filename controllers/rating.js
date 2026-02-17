@@ -12,6 +12,36 @@ const VoteSchema = z.object({
   bookId: z.string()
 });
 
+const view = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+ 
+    // 3. Check for existing user
+    const existingRating = await prisma.rating.findFirst({
+      where: { bookId,userId: req.userId },
+    });
+
+    if (existingRating) {
+      return res.status(200).json({
+        rating: existingRating.score,
+        comment: existingRating.comment
+      });
+    } else {
+      return res.status(200).json({
+        rating: null,
+        comment: null
+      });
+    }
+
+
+
+    
+  } catch (error) {
+    console.error("Registration error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const vote = async (req, res) => {
   try {
     const data = req.body;
@@ -36,14 +66,13 @@ const vote = async (req, res) => {
       where: { bookId,userId: req.userId },
     });
 
-    console.log("Existing rating found:", existingRating); // Debugging log
-    console.log("User ID from token:", req.userId); // Debugging log
+    console.log("Existing rating:", existingRating); // Debugging log
 
     if (existingRating) {
       await prisma.rating.update({
         where: { id: existingRating.id },
         data: {
-          rating,
+          score:rating,
           comment
         },
       });
@@ -75,4 +104,5 @@ const vote = async (req, res) => {
 // Use module.exports for CommonJS
 module.exports = {
   vote,
+  view
 };

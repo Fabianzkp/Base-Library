@@ -9,6 +9,4 @@ router.use("/auth", authRoutes);
 router.use("/book", bookRoutes);
 // add book and rating routes with appropriate prefixes
 
-//router.use("/ratings", ratingRoutes);
-
 module.exports = router;
