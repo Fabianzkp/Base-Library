@@ -11,6 +11,14 @@
 <body>
     <header>
         <h1>Base Library</h1>
+        <div id="visitorLinks" class="visitor-links">
+            <a class="item" href="/auth/sign-in">Login</a>
+            <a class="item" href="/auth/register">Register</a>
+        </div>
+        <div id="userLinks" class="user-links">
+          <a class="item" href="#_">Hello, <span id="username"></span></a>
+          <button id="logoutBtn" type="button" class="item">Logout</button>
+        </div>
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="Search for books...">
             <div class="filter-container">
@@ -44,7 +52,20 @@
         </div>
     </main>
 
+    <script src="index.js"></script>
     <script src="script.js"></script>
+    <script>
+      // Check if user is logged in
+      
+      const logoutBtn = document.getElementById("logoutBtn");
+
+     
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("user");
+        alert("You have been logged out.");
+        window.location.href = "/";
+      });
+    </script>
 </body>
 
 </html>

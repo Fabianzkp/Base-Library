@@ -161,13 +161,15 @@ class BaseLibrary {
       return;
     }
 
+    const user = JSON.parse(localStorage.getItem("user"));
+
     container.innerHTML = books
-      .map((book) => this.createBookCard(book))
+      .map((book) => this.createBookCard(book,user))
       .join("");
     this.attachBookEventListeners(container);
   }
 
-  createBookCard(book) {
+  createBookCard(book,user) {
     const bookId = book.uniqueId || book.id;
     const isFavorited = this.favorites.some((fav) => fav.id === bookId);
     const coverUrl =
@@ -181,12 +183,17 @@ class BaseLibrary {
         google: "Google Books",
       }[book.source] || book.source;
 
+      let bookTitleHtml = `${book.title}`;
+      if(user){
+        bookTitleHtml = `<a href="/book/${bookId}">${book.title}</a>`;
+      }
+
     return `
             <div class="book-card" data-book-id="${bookId}" data-book='${JSON.stringify(book).replace(/'/g, "&apos;")}'>
                 <div class="source-badge">${sourceLabel}</div>
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="this.src='https://via.placeholder.com/200x300?text=No+Cover'">
-                <div class="book-title">${book.title}</div>
+                <div class="book-title">${bookTitleHtml}</div>
                 <div class="book-author">by ${authors}</div>
                 <div class="book-actions">
                     <button class="read-btn" onclick="library.readBook('${bookId}')">Read</button>

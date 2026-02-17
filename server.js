@@ -5,12 +5,15 @@ const app = express();
 const PORT = 3000;
 
 const bodyParser = require("body-parser");
+
 const bcrypt = require("bcryptjs");
 
 const fs = require("fs");
 const cors = require("cors");
+
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+//app.use(express.json());
 app.use(express.static("."));
 
 const USERS_FILE = "./users.json";
