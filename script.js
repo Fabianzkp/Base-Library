@@ -119,6 +119,10 @@ class BaseLibrary {
       const data = await response.json();
       return (data.items || []).map((item) => {
         const book = item.volumeInfo;
+        
+        // Create embeddable Google Books preview URL
+        const embedUrl = `https://books.google.com/books?id=${item.id}&lpg=PP1&pg=PP1&output=embed`;
+        
         return {
           id: item.id,
           title: book.title || "Unknown Title",
@@ -128,7 +132,7 @@ class BaseLibrary {
           formats: {
             "image/jpeg":
               book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail,
-            "text/html": book.previewLink,
+            "text/html": embedUrl,  // Use embeddable URL instead of previewLink
             "application/pdf": item.accessInfo?.pdf?.downloadLink,
             "application/epub+zip": item.accessInfo?.epub?.downloadLink,
           },
