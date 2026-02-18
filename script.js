@@ -155,8 +155,9 @@ class BaseLibrary {
     // Filter books to only show exact or close title matches
     const filteredBooks = query === "popular" ? books : books.filter(book => {
       const bookTitle = (book.title || "").toLowerCase();
+      const bookAuthor = (book.authors || []).map(a => (a.name || "").toLowerCase()).join(" ");
       const searchQuery = query.toLowerCase();
-      return bookTitle.includes(searchQuery);
+      return bookTitle.includes(searchQuery) || bookAuthor.includes(searchQuery);
     });
     
     this.displayBooks(filteredBooks, this.bookGrid);
