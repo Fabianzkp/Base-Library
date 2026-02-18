@@ -3,7 +3,7 @@ const path = require("path"); // Added for path handling
 
 const app = express();
 const PORT = 3000;
-
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const bodyParser = require("body-parser");
 
 const bcrypt = require("bcryptjs");
@@ -81,6 +81,7 @@ app.get("/proxy", async (req, res) => {
     return res.status(500).send("Proxy error: " + err.message);
   }
 });
+
 
 
 // IMPORT ROUTES
