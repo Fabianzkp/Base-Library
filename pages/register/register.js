@@ -4,14 +4,6 @@ document
     const form = document.getElementById("loginForm");
     const formData = new FormData(form);
 
-    /* console.log("Form data:", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      username: formData.get("username"),
-    });
-
-    return */
-
     fetch("/auth/register", {
       method: "POST",
       body: JSON.stringify({
@@ -38,3 +30,10 @@ document
         alert("An error occurred during registration.");
       });
   });
+
+document.getElementById("togglePassword").addEventListener("click", function() {
+  const passwordInput = document.getElementById("password");
+  const type = passwordInput.type === "password" ? "text" : "password";
+  passwordInput.type = type;
+  this.textContent = type === "password" ? "👁️" : "🙈";
+});
