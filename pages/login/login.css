@@ -1,0 +1,134 @@
+/* Center the form on the page using Flexbox on the main container */
+main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; /* Takes up most of the viewport height */
+    padding: 1rem;
+}
+
+.login-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    background: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transition: background 0.3s ease;
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.75rem;
+    color: var(--text-color);
+}
+
+/* Flexbox for Form Elements */
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem; /* Consistent spacing between rows */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Responsive Input Styling */
+input[type="email"],
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="email"]:focus,
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--button-bg);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Action Buttons using Flexbox */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.secondary-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+}
+
+.secondary-btn:hover {
+    background: var(--border-color);
+    color: var(--text-color);
+}
+
+.link-btn {
+    width: 100%;
+    background: transparent;
+    text-decoration: none;
+    color: var(--text-color);
+    padding: 0.75rem;
+}
+
+.link-btn:hover {
+    background: transparent;
+    text-decoration: underline;
+    color: var(--text-color);
+}
+
+/* Visual HR replacement */
+.separator {
+    height: 1px;
+    background-color: var(--border-color);
+    border: none;
+    margin: 1.5rem 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 1.5rem;
+        border: none;
+        box-shadow: none;
+        background: transparent; /* Seamless look on mobile */
+    }
+    
+    main {
+        align-items: flex-start; /* Better scrolling on small screens */
+        padding-top: 2rem;
+    }
+}

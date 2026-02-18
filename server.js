@@ -1,15 +1,19 @@
 const express = require("express");
+const path = require("path"); // Added for path handling
 
 const app = express();
 const PORT = 3000;
-
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const bodyParser = require("body-parser");
+
 const bcrypt = require("bcryptjs");
 
 const fs = require("fs");
 const cors = require("cors");
+
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+//app.use(express.json());
 app.use(express.static("."));
 
 const USERS_FILE = "./users.json";
@@ -80,69 +84,10 @@ app.get("/proxy", async (req, res) => {
 
 
 
-// LOGIN
+// IMPORT ROUTES
+const mainRouter = require("./routes/index");
+app.use("/", mainRouter); 
 
-// Leer usuarios
-function getUsers() {
-  const data = fs.readFileSync(USERS_FILE);
-  return JSON.parse(data);
-}
-
-// Guardar usuarios
-function saveUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-
-app.post("/register", async (req, res) => {
-  const { email, password } = req.body;
-
-  const users = getUsers();
-
-  // Verificar si ya existe
-  const userExists = users.find(u => u.email === email);
-  if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
-  }
-
-  // Encriptar contraseña
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const newUser = {
-    id: Date.now(),
-    email,
-    password: hashedPassword
-  };
-
-  users.push(newUser);
-  saveUsers(users);
-
-  res.json({ message: "User registered successfully" });
-});
-
-
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  const users = getUsers();
-  const user = users.find(u => u.email === email);
-
-  if (!user) {
-    return res.status(400).json({ message: "User not found" });
-  }
-
-  const isValid = await bcrypt.compare(password, user.password);
-
-  if (!isValid) {
-    return res.status(400).json({ message: "Wrong password" });
-  }
-
-  res.json({
-    message: "Login successful",
-    userId: user.id,
-    email: user.email
-  });
-});
 
 app.listen(PORT, () => {
   console.log(`✅ Open: http://localhost:${PORT}/index.html`);

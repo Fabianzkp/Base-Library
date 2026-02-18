@@ -408,6 +408,12 @@
     showOnly("html");
     setStatus("Loading HTML...");
 
+    // Hide navigation and zoom controls for HTML/Google Books since they have their own
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    document.getElementById("zoomIn").style.display = "none";
+    document.getElementById("zoomOut").style.display = "none";
+
     let scrollPosition = 0;
     const scrollStep = 500;
 

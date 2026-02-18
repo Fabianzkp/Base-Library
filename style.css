@@ -300,3 +300,21 @@ main {
         flex-direction: column;
     }
 }
+
+.visitor-links, .user-links {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+    gap: 1rem;
+    background-color: transparent;
+}
+
+.visitor-links .item, .user-links .item {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    color:white;
+    text-decoration: none;
+    /* background-color: var(--button-bg); */
+    transition: background-color 0.3s ease;
+}
