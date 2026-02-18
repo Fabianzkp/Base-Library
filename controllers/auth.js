@@ -37,8 +37,13 @@ const register = async (req, res) => {
     const { email, password, username } = validation.data;
 
     // 3. Check for existing user
-    const existingUser = await prisma.user.findUnique({
-      where: { email,username },
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { username }
+        ]
+      },
     });
 
     if (existingUser) {
